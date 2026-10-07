@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<a class="back" href="/devices">← Device inventory</a>
+<div class="page-heading"><div><p class="eyebrow">DEVICE #{{ device.id }}</p><h1>{{ device.name or device.hostname or 'UNKNOWN' }}</h1></div><div><span class="badge {{ 'online' if device.online else 'offline' }}">{{ 'ONLINE' if device.online else 'OFFLINE' }}</span> <span class="badge {{ device.trust_state|lower }}">{{ device.trust_state }}</span></div></div>
+{% if device.trust_state == 'UNKNOWN' %}{% include 'investigation.html' %}{% endif %}
+<div class="detail-grid">
+<section class="panel padded"><h2>Identity</h2><dl>
+<dt>Current IP</dt><dd class="mono">{{ device.ip }}</dd><dt>MAC</dt><dd class="mono">{{ device.mac }}</dd><dt>Hostname</dt><dd>{{ device.hostname or 'UNKNOWN' }}</dd><dt>Vendor</dt><dd>{{ device.vendor or 'UNKNOWN' }}</dd><dt>First seen (UTC)</dt><dd class="mono">{{ device.first_seen }}</dd><dt>Last seen (UTC)</dt><dd class="mono">{{ device.last_seen }}</dd><dt>Previous IP addresses</dt><dd>{{ previous_ips|join(', ') or 'None recorded' }}</dd></dl><h3>Notes</h3><p class="notes">{{ device.notes or 'No notes yet.' }}</p></section>
+<section class="panel padded"><h2>Review device</h2><p class="hint">Changes are saved only when you submit this form.</p><form method="post" action="/device/{{ device.id }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+<label for="name">User name</label><input id="name" name="name" maxlength="200" value="{{ device.name or '' }}" placeholder="Assign a name when you identify this device">
+<label for="trust">Trust state</label><select id="trust" name="trust">{% for value, label in [('UNKNOWN','leave for review'),('KNOWN','recognized, not trusted'),('TRUSTED','approved by me'),('BLOCKED','flag for security alerts')] %}<option value="{{ value|lower }}" {{ 'selected' if device.trust_state == value else '' }}>{{ value }} — {{ label }}</option>{% endfor %}</select>
+<p class="hint">BLOCKED flags a device for monitoring. It does not block network traffic or change firewall rules.</p>
+<label for="notes">Notes</label><textarea id="notes" name="notes" maxlength="10000" rows="5">{{ device.notes }}</textarea><button type="submit">Save device</button>
+</form></section>
+</div>
+<section class="panel padded"><h2>Fingerprint evidence</h2><p>Likely category: <strong>{{ fingerprint.category }}</strong> · {{ fingerprint.confidence }} confidence</p><p class="hint">Reported names can be changed or spoofed. Categories are evidence-based hints, not an exact model or proof of identity.</p><dl>{% for item in fingerprint.evidence %}<dt>{{ item.source|replace('_',' ') }}</dt><dd>{{ item.value }}</dd>{% endfor %}</dl></section>
+{% with security_base='/device/' ~ device.id %}{% include 'security_events.html' %}{% endwith %}
+<section class="panel"><div class="panel-heading"><h2>Event timeline</h2><span>{{ events|length }} recent events</span></div><ol class="timeline">{% for event in events %}<li><span class="mono">{{ event.occurred_at[:19]|replace('T',' ') }} UTC</span><strong>{{ event.kind|replace('_',' ') }}</strong><code>{{ event.details|tojson }}</code></li>{% else %}<li>No events recorded.</li>{% endfor %}</ol></section>
+<section class="panel"><div class="panel-heading"><h2>Observation history</h2><span>{{ observations|length }} recent observations</span></div><div class="table-scroll responsive-table"><table><thead><tr><th>Time (UTC)</th><th>IP</th><th>Hostname</th><th>Vendor</th><th>Source</th></tr></thead><tbody>{% for observation in observations %}<tr><td data-label="Time (UTC)" class="mono timestamp">{{ observation.observed_at[:19]|replace('T',' ') }}</td><td data-label="IP" class="mono">{{ observation.ip }}</td><td data-label="Hostname">{{ observation.hostname or 'UNKNOWN' }}</td><td data-label="Vendor">{{ observation.vendor or 'UNKNOWN' }}</td><td data-label="Source">{{ observation.source }}</td></tr>{% else %}<tr><td colspan="5" class="empty">No observations recorded.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

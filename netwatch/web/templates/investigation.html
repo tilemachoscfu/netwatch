@@ -1,0 +1,26 @@
+<section id="investigation" class="panel padded investigation" aria-labelledby="investigation-title">
+<h2 id="investigation-title">INVESTIGATION</h2>
+<p role="status">Status: <strong>{{ investigation.status if investigation else 'Not investigated' }}</strong></p>
+<p class="hint">Local evidence first. Reported names and vendors are untrusted hints. Confirm identity before using the manual review form below.</p>
+{% if investigation %}
+<p class="hint">Investigation time (UTC): {{ investigation.investigated_at }}</p>
+{% set result = investigation.result %}
+{% if investigation.status == 'Complete' %}
+<dl><dt>Possible identity</dt><dd>{{ result.possible_identity }}</dd><dt>Category</dt><dd>{{ result.category }}</dd><dt>Confidence</dt><dd><strong>{{ result.confidence }}</strong></dd></dl>
+<h3>Reasons</h3><ul>{% for reason in result.reasons %}<li>{{ reason }}</li>{% endfor %}</ul>
+<h3>Evidence</h3><dl>{% for item in result.evidence %}<dt>{{ item.source }}</dt><dd>{{ item.observation }}<br><small class="hint">{{ item.mode }} · {{ item.reliability }} reliability · {{ item.timestamp }} UTC</small></dd>{% endfor %}</dl>
+<h3>Conflicting / missing evidence</h3><ul>{% for reason in result.conflicting_evidence + result.missing_evidence %}<li>{{ reason }}</li>{% endfor %}</ul>
+<h3>Presence pattern</h3><p>{{ result.presence_pattern }}</p>
+<h3>Possible existing-device match</h3>
+{% for match in result.possible_matches %}<p>Possible match with <a href="/device/{{ match.device_id }}">Device {{ match.device_id }} — {{ match.name }}</a> · {{ match.confidence }} confidence</p><ul>{% for reason in match.reasons %}<li>{{ reason }}</li>{% endfor %}<li>{{ match.possibilities|join('; ') }}. Manual confirmation required.</li></ul>{% else %}<p class="hint">No supported match found in the compared KNOWN/TRUSTED records.</p>{% endfor %}
+<h3>Recommended action</h3><p>{{ result.recommended_action }}</p><p class="hint">{{ result.active_discovery }}</p>
+{% elif investigation.status == 'Failed' %}<p>{{ result.error }}</p>
+{% else %}<p>Evidence collection is in progress. Reload shortly to see the result.</p>{% endif %}
+{% endif %}
+<form method="post" action="/device/{{ device.id }}/investigate" data-investigation-form>
+<label class="investigation-choice"><input type="checkbox" name="active"> Allow one reachability check if passive evidence is insufficient</label>
+<p class="hint">Optional: one ICMP echo, up to two seconds, to a freshly observed device in the configured LAN. Stale records are not probed. Reachability cannot identify a device.</p>
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit">Investigate Device</button><p class="hint" data-investigation-status aria-live="polite">At most once per minute. No device settings or trust changes are made.</p>
+</form>
+{% if investigation_history|length > 1 %}<details><summary>Previous conclusions (up to four)</summary><ul>{% for run in investigation_history[1:] %}<li>{{ run.investigated_at }} UTC · {{ run.status }} · {{ run.result.possible_identity or run.result.error or 'Interrupted' }} · {{ run.result.confidence or 'INSUFFICIENT' }}</li>{% endfor %}</ul></details>{% endif %}
+</section>

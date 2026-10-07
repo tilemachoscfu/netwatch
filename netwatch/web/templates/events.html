@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block content %}
+<p class="eyebrow">NETWORK ACTIVITY</p><h1>Event history</h1><p class="subtitle">Changes in identity, presence, and your device reviews.</p>
+<div class="panel table-scroll responsive-table"><table><thead><tr><th>Time (UTC)</th><th>Device</th><th>Event</th><th>Details</th></tr></thead><tbody>
+{% for event in events %}<tr><td data-label="Time (UTC)" class="mono timestamp">{{ event.occurred_at[:19]|replace('T',' ') }}</td><td data-label="Device"><a class="device-link" href="/device/{{ event.device_id }}">#{{ event.device_id }}</a></td><td data-label="Event">{{ event.kind|replace('_',' ') }}</td><td data-label="Details" class="details">{{ event.details|tojson }}</td></tr>{% else %}<tr><td colspan="4" class="empty">No events yet.</td></tr>{% endfor %}
+</tbody></table></div><p class="hint">Showing recent events. Use ?limit=500 for a larger timeline or export history through the CLI.</p>
+{% endblock %}

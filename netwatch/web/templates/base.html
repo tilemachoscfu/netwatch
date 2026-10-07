@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c131d">
+  <title>{{ title }} · NetWatch</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body data-refresh="{{ 'true' if request.path in ['/', '/security', '/devices', '/unknown', '/events'] else 'false' }}">
+  <header><a class="brand" href="/">◉ <span>NETWATCH</span></a><span class="local">PRIVATE LAN / LOCAL DASHBOARD</span></header>
+  <div class="layout">
+    <nav class="main-navigation" aria-label="Main navigation">
+      <a class="{{ 'selected' if request.path in ['/', '/security'] else '' }}" href="/">Security overview</a>
+      <a class="{{ 'selected' if request.path == '/devices' else '' }}" href="/devices">Devices</a>
+      <a class="{{ 'selected' if request.path == '/unknown' else '' }}" href="/unknown">Unknown devices</a>
+      <a class="{{ 'selected' if request.path == '/events' else '' }}" href="/events">Event history</a>
+      <div class="nav-note">Know what’s on<br>your network.</div>
+    </nav>
+    <main>
+      {% for message in get_flashed_messages() %}<p class="notice" role="status">{{ message }}</p>{% endfor %}
+      {% block content %}{% endblock %}
+      <footer>NetWatch · Times are UTC · Trust is assigned by you</footer>
+    </main>
+  </div>
+  <nav class="mobile-navigation" aria-label="Mobile navigation">
+    {% for href, label, icon, selected in [('/', 'Overview', '◉', request.path in ['/', '/security']), ('/devices', 'Devices', '▤', request.path == '/devices' or request.path.startswith('/device/')), ('/events', 'Events', '≡', request.path == '/events'), ('/unknown', 'Unknown', '?', request.path == '/unknown')] %}
+    <a href="{{ href }}" class="{{ 'selected' if selected else '' }}" {% if selected %}aria-current="page"{% endif %}><span aria-hidden="true" class="navigation-icon">{{ icon }}</span><span>{{ label }}</span></a>
+    {% endfor %}
+  </nav>
+</body>
+</html>

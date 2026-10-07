@@ -1,0 +1,31 @@
+# null auto-detects the connected private IPv4 LAN. Set both on multi-LAN hosts.
+subnet: null
+interface: null
+# Delay after scan completion. Minimum 10 seconds.
+scan_interval: 60
+# Device becomes offline after this much time without a confirmed observation.
+offline_timeout: 300
+# Relative paths resolve against this YAML file. Docker overrides this via env.
+database_path: ./data/netwatch.db
+# Passive by default. Optional active probes: [neighbor, ping] or [neighbor, nmap].
+discovery_methods: [neighbor]
+max_hosts: 1024
+ping_workers: 8
+# Opt-in DNS/NSS enrichment; failures preserve previously known metadata.
+resolve_hostnames: false
+# Optional offline OUI file, using nmap-mac-prefixes or IEEE oui.txt format:
+# vendor_file: /usr/share/nmap/nmap-mac-prefixes
+notifications:
+  console: true
+  telegram: false
+  security_cooldown: 3600
+  long_absence: 86400
+# Optional private KEY=value file (chmod 600); do not put credentials in YAML.
+# secrets_file: ./netwatch.secrets
+# Optional locally readable dnsmasq lease files. No router queries are performed.
+dhcp_files: []
+# Set a password via `netwatch set-password`, then enable to require it even if
+# the password hash is accidentally removed. Username is netwatch.
+web_auth_required: false
+# Optional Tailscale Serve HTTPS root URL. Backend stays on 127.0.0.1.
+# tailscale_url: https://your-machine.your-tailnet.ts.net:8443

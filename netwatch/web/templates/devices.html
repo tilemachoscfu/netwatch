@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+{% if security %}
+{% include 'security_overview.html' %}
+<div class="page-heading device-management-heading"><div><p class="eyebrow">DEVICE MANAGEMENT</p><h1>Device inventory</h1><p class="subtitle">Search, review and manage existing devices.</p></div></div>
+{% else %}
+<div class="page-heading"><div><p class="eyebrow">NETWORK INVENTORY</p><h1>{{ title }}</h1><p class="subtitle">A history of every device seen on your LAN.</p></div><span class="badge {{ 'online' if summary.monitor_healthy else 'offline' }}" data-monitor-badge>{{ 'MONITORING' if summary.monitor_healthy else 'MONITOR STOPPED OR STALE' }}</span></div>
+<div class="metrics">
+  <a href="/devices?status=online" class="metric"><span>Devices Online</span><strong class="green" data-count="online">{{ summary.online }}</strong><small>Recently observed</small></a>
+  <a href="/devices?status=offline" class="metric"><span>Devices Offline</span><strong data-count="offline">{{ summary.offline }}</strong><small>Past the observation timeout</small></a>
+  <a href="/unknown" class="metric"><span>Unknown Devices</span><strong class="amber" data-count="unknown">{{ summary.unknown }}</strong><small>Awaiting your review</small></a>
+  <a href="/devices?trust=trusted" class="metric"><span>Trusted Devices</span><strong class="blue" data-count="trusted">{{ summary.trusted }}</strong><small>Explicitly approved by you</small></a>
+  <a href="/devices?trust=known" class="metric"><span>Known Devices</span><strong data-count="known">{{ summary.known }}</strong><small>Recognized, not approved as trusted</small></a>
+  <a href="/devices?trust=blocked" class="metric"><span>Blocked Devices</span><strong data-count="blocked">{{ summary.blocked }}</strong><small>Flagged for security alerts</small></a>
+</div>
+<section class="panel padded network-status" aria-label="Network overview">
+  <div><h2>Network overview</h2><p class="hint">Last scan: <span data-last-scan>{{ summary.last_scan.completed_at[:19]|replace('T',' ') if summary.last_scan else 'Not scanned yet' }}</span> UTC · <span data-monitor-health>{{ 'Healthy' if summary.monitor_healthy else 'Stopped, starting, or stale' }}</span></p></div>
+  <ol class="network-overview"><li><strong>Gateway</strong><span class="mono">{{ summary.network.gateway or 'Unknown' }}</span></li><li><strong>NetWatch</strong><span class="mono">{{ summary.network.local_ip or 'Unknown' }}</span></li><li><strong>Known LAN devices</strong><span>{{ summary.total }} identities · {{ summary.online }} online</span></li></ol>
+  {% if summary.network.subnet %}<p class="hint">{{ summary.network.interface }} · {{ summary.network.subnet }} · Addresses from local kernel network information</p>{% endif %}
+</section>
+{% endif %}
+<details class="filters-disclosure panel" open data-responsive-details data-disclosure-key="inventory-filters" {% if filters.q or filters.status != 'all' or filters.trust != ('unknown' if unknown else 'all') or filters.category != 'all' or filters.sort != 'id' or filters.order != 'asc' %}data-keep-open{% endif %}>
+<summary>Search &amp; filters <span>{{ devices|length }} devices</span></summary>
+<form class="padded filters" method="get" aria-label="Filter devices">
+  <div><label for="q">Search devices</label><input id="q" name="q" maxlength="200" value="{{ filters.q }}" placeholder="Name, hostname, vendor, IP or MAC"></div>
+  <div><label for="status">Status</label><select id="status" name="status">{% for value in ['all','online','offline'] %}<option value="{{ value }}" {{ 'selected' if filters.status == value else '' }}>{{ value|capitalize }}</option>{% endfor %}</select></div>
+  <div><label for="filter-trust">Trust</label><select id="filter-trust" name="trust">{% for value in ['all','trusted','known','unknown','blocked'] %}<option value="{{ value }}" {{ 'selected' if filters.trust == value else '' }}>{{ value|capitalize }}</option>{% endfor %}</select></div>
+  <div><label for="category">Category</label><select id="category" name="category">{% for value in ['all'] + categories|list %}<option value="{{ value }}" {{ 'selected' if filters.category == value else '' }}>{{ value|capitalize if value == 'all' else value }}</option>{% endfor %}</select></div>
+  <div><label for="sort">Sort</label><select id="sort" name="sort">{% for value in ['id','ip','name','vendor','last_seen','first_seen','category'] %}<option value="{{ value }}" {{ 'selected' if filters.sort == value else '' }}>{{ value|replace('_',' ')|capitalize }}</option>{% endfor %}</select></div>
+  <div><label for="order">Order</label><select id="order" name="order"><option value="asc" {{ 'selected' if filters.order == 'asc' else '' }}>Ascending</option><option value="desc" {{ 'selected' if filters.order == 'desc' else '' }}>Descending</option></select></div>
+  <button type="submit">Apply filters</button><a class="back" href="{{ '/unknown' if unknown else '/devices' }}">Reset</a>
+</form>
+</details>
+<div class="panel">
+  <div class="panel-heading"><h2>{{ 'Unknown devices' if unknown else 'Device inventory' }}</h2><span>{{ devices|length }} devices · refreshes every 30 seconds</span></div>
+  <div class="table-scroll responsive-table inventory-table"><table><thead><tr><th>Status</th><th>Name</th><th>IP</th><th>MAC</th><th>Hostname</th><th>Vendor</th><th>Category</th><th>Last seen (UTC)</th><th>Trust</th></tr></thead><tbody>
+  {% for device in devices %}<tr class="{{ 'new-unknown' if device.new_unknown else '' }}">
+    <td data-label="Status"><span class="badge {{ 'online' if device.online else 'offline' }}">{{ 'ONLINE' if device.online else 'OFFLINE' }}</span></td>
+    <td data-label="Name"><a class="device-link" href="{{ url_for('device_page', device_id=device.id) }}">{{ device.name or device.hostname or 'UNKNOWN' }}</a><small class="sub-label">Device #{{ device.id }}</small></td>
+    <td data-label="IP" class="mono">{{ device.ip }}</td><td data-label="MAC" class="mono">{{ device.mac }}</td><td data-label="Hostname">{{ device.hostname or 'UNKNOWN' }}</td><td data-label="Vendor">{{ device.vendor or 'UNKNOWN' }}</td><td data-label="Category">{{ device.category }}<small class="sub-label">{{ device.fingerprint.confidence }} confidence</small></td><td data-label="Last seen (UTC)" class="mono timestamp"><time data-relative-time datetime="{{ device.last_seen }}" title="{{ device.last_seen }} UTC">{{ device.last_seen[:19]|replace('T',' ') }}</time></td>
+    <td data-label="Trust"><span class="badge {{ device.trust_state|lower }}">{{ device.trust_state }}</span>{% if device.new_unknown %} <span class="badge unknown">NEW</span>{% endif %}</td>
+  </tr>{% else %}<tr><td colspan="9" class="empty">No devices match these filters.</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+<p class="hint">Select a device to review its history, assign a name, edit notes, or change trust. Vendor names identify a manufacturer, not the physical device.</p>
+<div class="detail-grid">
+<section class="panel"><div class="panel-heading"><h2>Recent alerts</h2><span>Real state changes · delivery is best effort</span></div><ol class="timeline">{% for event in summary.recent_alerts %}<li><span class="mono">{{ event.occurred_at[:19]|replace('T',' ') }} UTC</span><a href="/device/{{ event.device_id }}">Device #{{ event.device_id }}</a><strong>{{ event.kind|replace('_',' ') }}</strong></li>{% else %}<li>No alert events recorded.</li>{% endfor %}</ol></section>
+<section class="panel"><div class="panel-heading"><h2>Recent network events</h2><a href="/events">Full timeline</a></div><ol class="timeline">{% for event in summary.recent_events %}<li><span class="mono">{{ event.occurred_at[:19]|replace('T',' ') }} UTC</span><a href="/device/{{ event.device_id }}">Device #{{ event.device_id }}</a><strong>{{ event.kind|replace('_',' ') }}</strong></li>{% else %}<li>No events recorded.</li>{% endfor %}</ol></section>
+</div>
+{% endblock %}

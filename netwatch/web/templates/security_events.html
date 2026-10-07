@@ -1,0 +1,14 @@
+<section class="panel security-events" aria-labelledby="security-events-heading">
+  <div class="panel-heading"><div><h2 id="security-events-heading">Recent security events</h2><p class="hint">Real persisted evidence · {{ security_window }} · UTC · {% if security_event_count is defined %}{{ security_event_count }} events · {% endif %}up to 100 shown</p></div>
+    <div class="window-links" aria-label="Security event time window">{% for window in ['24h','7d','30d'] %}<a class="{{ 'selected' if security_window == window else '' }}" href="{{ security_base }}?window={{ window }}{% if security_offline is defined and security_offline %}&amp;show_offline=true{% endif %}">{{ window }}</a>{% endfor %}</div>
+  </div>
+  <div class="table-scroll responsive-table"><table><thead><tr><th>Time (UTC)</th><th>Severity</th><th>Device</th><th>IP at event</th><th>MAC</th><th>Event</th></tr></thead><tbody>
+  {% for event in security_events %}<tr>
+    <td data-label="Time (UTC)" class="mono timestamp">{{ event.occurred_at[:19]|replace('T',' ') }}</td>
+    <td data-label="Severity"><span class="badge {{ 'blocked' if event.severity == 'HIGH' else 'unknown' }}">{{ event.severity }}</span></td>
+    <td data-label="Device"><a class="device-link" href="/device/{{ event.device_id }}">{{ event.name }}</a><small class="sub-label">{{ event.review_state }} · {{ 'Needs review' if event.requires_review else 'Historical record' }}</small></td>
+    <td data-label="IP at event" class="mono">{{ event.ip }}</td><td data-label="MAC" class="mono">{{ event.mac }}</td>
+    <td data-label="Event"><strong>{{ event.title }}</strong><p class="hint">{{ event.description }}</p></td>
+  </tr>{% else %}<tr><td colspan="6" class="empty">No security events in this time window.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>

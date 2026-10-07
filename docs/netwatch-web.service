@@ -1,0 +1,24 @@
+[Unit]
+Description=NetWatch local dashboard
+After=network-online.target
+
+[Service]
+Type=simple
+User=netwatch
+Group=netwatch
+ExecStart=/opt/netwatch/.venv/bin/netwatch --config /etc/netwatch/netwatch.yaml web --port 8765
+Environment=NETWATCH_DATABASE_PATH=/var/lib/netwatch/netwatch.db
+StateDirectory=netwatch
+StateDirectoryMode=0700
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/netwatch
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,25 @@
+[Unit]
+Description=NetWatch private LAN device monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=netwatch
+Group=netwatch
+ExecStart=/opt/netwatch/.venv/bin/netwatch --config /etc/netwatch/netwatch.yaml monitor
+Environment=NETWATCH_DATABASE_PATH=/var/lib/netwatch/netwatch.db
+StateDirectory=netwatch
+StateDirectoryMode=0700
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=120
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_NETLINK
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
